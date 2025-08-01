@@ -1,7 +1,7 @@
 import os
 import streamlit as st
 
-# --- Load secrets from .env or Streamlit Cloud ---
+# --- Load secrets from .env or Streamlit Secrets ---
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -13,6 +13,9 @@ HF_TOKEN = os.getenv("HF_TOKEN") or st.secrets.get("HF_TOKEN")
 if not HF_TOKEN:
     st.error("⚠️ Hugging Face API token not found. Please set it in `.env` or Streamlit Secrets.")
     st.stop()
+
+# Set environment variable for HF
+os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
 
 # --- LangChain / HuggingFace imports ---
 from langchain_huggingface import HuggingFaceEndpoint, HuggingFaceEmbeddings, ChatHuggingFace
@@ -64,8 +67,8 @@ st.markdown("""
 <style>
     .main { background-color: #f8fbfd; }
     .stChatMessage { border-radius: 15px; padding: 12px; }
-    .user { background-color: #e1f0f6; }
-    .assistant { background-color: #f1f9f4; }
+    .user { background-color: #e1f0f6; margin: 8px 0; padding: 10px; border-radius: 10px; }
+    .assistant { background-color: #f1f9f4; margin: 8px 0; padding: 10px; border-radius: 10px; }
     .title { color: #007b83; font-size: 36px; font-weight: 800; text-align:center; }
     .subtitle { text-align:center; font-size:16px; color:#555; margin-bottom:20px; }
 </style>
@@ -80,16 +83,15 @@ if "qa_chain" not in st.session_state:
         with st.spinner("🔄 Initializing health assistant..."):
             llm_model = setup_llm(HUGGINGFACE_LLM_REPO_ID, HF_TOKEN)
 
-            # FIX: Pass HF token to embeddings
+            # FIX: Removed invalid token argument
             embedding_model = HuggingFaceEmbeddings(
                 model_name=HUGGINGFACE_EMBEDDING_MODEL,
-                huggingfacehub_api_token=HF_TOKEN,
                 cache_folder="models"
             )
 
-            # Load FAISS
+            # Load FAISS or show error
             if not os.path.exists(DB_FAISS_PATH):
-                st.error(f"⚠️ FAISS index not found at `{DB_FAISS_PATH}`. Please build it first.")
+                st.error(f"⚠️ FAISS index not found at `{DB_FAISS_PATH}`. Please build it first and upload it.")
                 st.stop()
 
             db = FAISS.load_local(DB_FAISS_PATH, embedding_model, allow_dangerous_deserialization=True)
@@ -111,7 +113,6 @@ if "qa_chain" not in st.session_state:
 user_query = st.chat_input("💬 Ask a health-related question...")
 
 if user_query:
-    # Display user message
     st.session_state.chat_history.append(("user", user_query))
 
     with st.spinner("🤔 Thinking..."):
@@ -122,7 +123,7 @@ if user_query:
         except Exception as e:
             st.session_state.chat_history.append(("assistant", f"❌ Error: {e}"))
 
-# Display chat history with styling
+# Display chat history
 for role, message in st.session_state.chat_history:
     if role == "user":
         st.markdown(f"<div class='user'>🧑 <b>You:</b> {message}</div>", unsafe_allow_html=True)
