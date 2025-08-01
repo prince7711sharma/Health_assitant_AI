@@ -1,7 +1,7 @@
 import os
 import streamlit as st
 
-# --- Load secrets from .env or Streamlit Secrets ---
+# --- Load secrets from .env or Streamlit Cloud ---
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -14,16 +14,13 @@ if not HF_TOKEN:
     st.error("⚠️ Hugging Face API token not found. Please set it in `.env` or Streamlit Secrets.")
     st.stop()
 
-# Set environment variable for HF
-os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
-
 # --- LangChain / HuggingFace imports ---
-from langchain_huggingface import HuggingFaceEndpoint, HuggingFaceEmbeddings, ChatHuggingFace
+from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
+from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.vectorstores import FAISS
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
-
 
 # --- Configuration ---
 HUGGINGFACE_LLM_REPO_ID = "mistralai/Mistral-7B-Instruct-v0.3"
@@ -67,8 +64,8 @@ st.markdown("""
 <style>
     .main { background-color: #f8fbfd; }
     .stChatMessage { border-radius: 15px; padding: 12px; }
-    .user { background-color: #e1f0f6; margin: 8px 0; padding: 10px; border-radius: 10px; }
-    .assistant { background-color: #f1f9f4; margin: 8px 0; padding: 10px; border-radius: 10px; }
+    .user { background-color: #e1f0f6; }
+    .assistant { background-color: #f1f9f4; }
     .title { color: #007b83; font-size: 36px; font-weight: 800; text-align:center; }
     .subtitle { text-align:center; font-size:16px; color:#555; margin-bottom:20px; }
 </style>
@@ -83,15 +80,15 @@ if "qa_chain" not in st.session_state:
         with st.spinner("🔄 Initializing health assistant..."):
             llm_model = setup_llm(HUGGINGFACE_LLM_REPO_ID, HF_TOKEN)
 
-            # FIX: Removed invalid token argument
-            embedding_model = HuggingFaceEmbeddings(
-                model_name=HUGGINGFACE_EMBEDDING_MODEL,
-                cache_folder="models"
+            # ✅ Use HuggingFace Inference API for embeddings
+            embedding_model = HuggingFaceInferenceAPIEmbeddings(
+                api_key=HF_TOKEN,
+                model_name=HUGGINGFACE_EMBEDDING_MODEL
             )
 
-            # Load FAISS or show error
+            # Load FAISS
             if not os.path.exists(DB_FAISS_PATH):
-                st.error(f"⚠️ FAISS index not found at `{DB_FAISS_PATH}`. Please build it first and upload it.")
+                st.error(f"⚠️ FAISS index not found at `{DB_FAISS_PATH}`. Please build it first.")
                 st.stop()
 
             db = FAISS.load_local(DB_FAISS_PATH, embedding_model, allow_dangerous_deserialization=True)
@@ -108,11 +105,11 @@ if "qa_chain" not in st.session_state:
         st.error(f"❌ Error initializing assistant: {e}")
         st.stop()
 
-
 # --- Chat UI ---
 user_query = st.chat_input("💬 Ask a health-related question...")
 
 if user_query:
+    # Display user message
     st.session_state.chat_history.append(("user", user_query))
 
     with st.spinner("🤔 Thinking..."):
@@ -123,7 +120,7 @@ if user_query:
         except Exception as e:
             st.session_state.chat_history.append(("assistant", f"❌ Error: {e}"))
 
-# Display chat history
+# Display chat history with styling
 for role, message in st.session_state.chat_history:
     if role == "user":
         st.markdown(f"<div class='user'>🧑 <b>You:</b> {message}</div>", unsafe_allow_html=True)
@@ -138,4 +135,5 @@ if user_query and "context" in response:
             st.write(doc.page_content)
             if doc.metadata:
                 st.json(doc.metadata)
+]
 
