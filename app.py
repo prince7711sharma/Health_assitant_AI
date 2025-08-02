@@ -132,21 +132,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- Decorative Heading ---
-# --- Streamlit UI Configuration ---
-st.set_page_config(page_title="🤖 MediBot AI Assistant", page_icon="🩺", layout="wide", theme="dark")
-
-# --- Custom CSS for Styling ---
-# ... (your existing CSS remains here) ...
-
-# --- Decorative Heading ---
 st.markdown("""
 <div class="header-bar">
-    <div class="header-title">🤖 MediBot AI</div>
+    <div class="header-title"><span style="font-size: 1.5em;">&#129302;</span> MediBot AI Health Assistant</div>
     <div class="header-subtitle">Your trusted companion for health-related information</div>
 </div>
 """, unsafe_allow_html=True)
-
-
 # --- Initialize session state for QA chain and chat history ---
 if "qa_chain" not in st.session_state:
     try:
@@ -218,6 +209,7 @@ for message_obj in st.session_state.chat_history:
 st.markdown(
     '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
     unsafe_allow_html=True)
+
 
 
 
