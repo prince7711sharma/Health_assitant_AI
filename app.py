@@ -176,13 +176,13 @@ if user_query:
     # Save user message
     st.session_state.chat_history.append(("user", user_query))
 
-with st.spinner("💭 Thinking..."):
-        # Invoke the QA chain to get the response
+    with st.spinner("💭 Thinking..."):
         response = st.session_state.qa_chain.invoke({'input': user_query})
         answer = response['answer']
 
     # Save assistant response
     st.session_state.chat_history.append(("assistant", answer))
+
 
 # --- Display chat history ---
 for role, message in st.session_state.chat_history:
@@ -204,6 +204,7 @@ if user_query:
 st.markdown(
     '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
     unsafe_allow_html=True)
+
 
 
 
