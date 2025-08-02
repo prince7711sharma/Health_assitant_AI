@@ -135,17 +135,19 @@ st.markdown("""
 
 # --- Initialize session state ---
 if "qa_chain" not in st.session_state:
-    try:
-        with st.spinner("🔄 Loading health documents and AI model..."):
-            llm_model = setup_llm(HUGGINGFACE_LLM_REPO_ID, HF_TOKEN)
+   try:
+    with st.spinner("🔄 Loading health documents and AI model..."):
+        llm_model = setup_llm(HUGGINGFACE_LLM_REPO_ID, HF_TOKEN)
 
-            # ✅ Set token to environment for embeddings
-            os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
+        # ✅ Set token to environment for embeddings
+        # This is all you need for the embeddings model
+        os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
 
-            # ✅ Initialize embeddings (without passing token)
-            embedding_model = HuggingFaceEmbeddings(
-                model_name=HUGGINGFACE_EMBEDDING_MODEL
-            )
+        # ✅ Initialize embeddings without passing the token
+        embedding_model = HuggingFaceEmbeddings(
+            model_name=HUGGINGFACE_EMBEDDING_MODEL
+        )
+        
 
             if not os.path.exists(DB_FAISS_PATH):
                 st.error(f"⚠️ FAISS index not found at {DB_FAISS_PATH}. Please build it first.")
@@ -162,10 +164,10 @@ if "qa_chain" not in st.session_state:
             st.session_state.qa_chain = qa_chain
             st.session_state.chat_history = []
         st.success("✅ Assistant is ready to chat!")
-    except Exception as e:
-        st.error(f"Error initializing assistant: {e}")
-        st.stop()
-
+  
+except Exception as e:
+    st.error(f"Error initializing assistant: {e}")
+    st.stop()
 # --- Chat input ---
 user_query = st.chat_input("💬 Type your health question here...")
 
@@ -200,5 +202,6 @@ if user_query:
 st.markdown(
     '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
     unsafe_allow_html=True)
+
 
 
