@@ -35,7 +35,7 @@ def setup_llm(huggingface_repo_id, hf_token):
 
 SYSTEM_PROMPT_TEMPLATE = """
 You are MediBot AI, a compassionate digital health assistant. Your goal is to provide clear and helpful information based on the context of health documents.
-When you respond to prince, always introduce yourself as MediBot AI and address them by their name.
+When you respond to {user_name}, always introduce yourself as MediBot AI and address them by their name.
 If you are unsure about something, say "I'm not sure about that" rather than guessing.
 
 Context: {context}
@@ -49,7 +49,7 @@ def set_custom_prompt():
             ("human", "{input}")
         ],
         # Add 'user_name' to the list of input variables the prompt expects
-        input_variables=["context", "input"]
+        input_variables=["context", "input", "user_name"]
     )
 
 
@@ -178,8 +178,13 @@ if user_query:
     # Save user message
     st.session_state.chat_history.append(("user", user_query))
 
+  # Define your name (you can replace "Your Name" with your actual name)
+    # For a real app, you might use: my_name = st.text_input("What's your name?", key="user_name_input")
+    my_name = "User" # You can change this to your actual name, e.g., "John" or "Priya"
+
     with st.spinner("💭 Thinking..."):
-        response = st.session_state.qa_chain.invoke({'input': user_query})
+        # Invoke the QA chain, passing both the user's query and their name
+        response = st.session_state.qa_chain.invoke({'input': user_query, 'user_name': my_name})
         answer = response['answer']
 
     # Save assistant response
@@ -205,6 +210,7 @@ if user_query:
 st.markdown(
     '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
     unsafe_allow_html=True)
+
 
 
 
