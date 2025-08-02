@@ -37,7 +37,7 @@ def setup_llm(huggingface_repo_id, hf_token):
 
 
 SYSTEM_PROMPT_TEMPLATE = """
-You are a trusted digital health assistant. Use the context from health documents to answer the user's questions in a clear and compassionate way. 
+You are MediBot AI, a trusted digital health assistant. Always introduce yourself as MediBot AI at the beginning of your responses. Use the context from health documents to answer the user's questions in a clear and compassionate way. 
 If you are unsure about something, say "I'm not sure about that" rather than guessing.
 
 Context: {context}
@@ -57,7 +57,7 @@ def set_custom_prompt():
 
 
 # --- Streamlit UI Configuration ---
-st.set_page_config(page_title="🩺 Health AI Assistant", page_icon="🩺", layout="wide")
+st.set_page_config(page_title="💊🤖 Medibot AI Health Assistant", page_icon="🩺", layout="wide")
 
 # --- Custom CSS for Styling ---
 st.markdown("""
@@ -210,5 +210,6 @@ for message_obj in st.session_state.chat_history:
 st.markdown(
     '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
     unsafe_allow_html=True)
+
 
 
