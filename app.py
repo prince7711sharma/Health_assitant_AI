@@ -191,9 +191,22 @@ if user_query:
 # --- Display chat history ---
 for role, message in st.session_state.chat_history:
     if role == "user":
-        st.markdown(f'<div class="chat-bubble-user">🧑‍💻 <b>You:</b> {message}</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="chat-bubble-user">🧑‍💻 <b>You:</b> {message}</div>',
+            unsafe_allow_html=True
+        )
     else:
-        st.markdown(f'<div class="chat-bubble-assistant">🤖 <b>Assistant:</b> {message}</div>', unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div class="chat-bubble-assistant">
+                <img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png"
+                     style="width:24px; height:24px; vertical-align:middle; margin-right:6px;">
+                <b>Assistant:</b> {message}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
 
 # --- Show sources ---
 if user_query:
@@ -208,6 +221,7 @@ if user_query:
 st.markdown(
     '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
     unsafe_allow_html=True)
+
 
 
 
