@@ -57,7 +57,7 @@ def set_custom_prompt():
 
 
 # --- Streamlit UI Configuration ---
-st.set_page_config(page_title="💊🤖 Medibot AI Health Assistant", page_icon="🩺", layout="wide")
+st.set_page_config(page_title="🤖 Medibot AI Health Assistant", page_icon="🩺", layout="wide")
 
 # --- Custom CSS for Styling ---
 st.markdown("""
@@ -134,7 +134,7 @@ st.markdown("""
 # --- Decorative Heading ---
 st.markdown("""
 <div class="header-bar">
-    <div class="header-title">🩺 Health AI Assistant</div>
+    <div class="header-title">🤖 Medibot AI Health Assistant</div>
     <div class="header-subtitle">Your trusted companion for health-related information</div>
 </div>
 """, unsafe_allow_html=True)
@@ -210,6 +210,7 @@ for message_obj in st.session_state.chat_history:
 st.markdown(
     '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
     unsafe_allow_html=True)
+
 
 
 
