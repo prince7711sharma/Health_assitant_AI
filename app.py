@@ -34,7 +34,8 @@ def setup_llm(huggingface_repo_id, hf_token):
 
 
 SYSTEM_PROMPT_TEMPLATE = """
-You are a trusted digital health assistant. Use the context from health documents to answer the user's questions in a clear and compassionate way. 
+You are MediBot AI, a compassionate digital health assistant. Your goal is to provide clear and helpful information based on the context of health documents.
+When you respond to {user_name}, always introduce yourself as MediBot AI and address them by their name.
 If you are unsure about something, say "I'm not sure about that" rather than guessing.
 
 Context: {context}
@@ -46,7 +47,9 @@ def set_custom_prompt():
         [
             ("system", SYSTEM_PROMPT_TEMPLATE),
             ("human", "{input}")
-        ]
+        ],
+        # Add 'user_name' to the list of input variables the prompt expects
+        input_variables=["context", "input", "user_name"]
     )
 
 
@@ -202,5 +205,6 @@ if user_query:
 st.markdown(
     '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
     unsafe_allow_html=True)
+
 
 
