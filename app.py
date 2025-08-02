@@ -138,11 +138,19 @@ if "qa_chain" not in st.session_state:
     try:
         with st.spinner("🔄 Loading health documents and AI model..."):
             llm_model = setup_llm(HUGGINGFACE_LLM_REPO_ID, HF_TOKEN)
-            embedding_model = HuggingFaceEmbeddings(model_name=HUGGINGFACE_EMBEDDING_MODEL)
+
+            # ✅ Set token to environment for embeddings
+            os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
+
+            # ✅ Initialize embeddings (without passing token)
+            embedding_model = HuggingFaceEmbeddings(
+                model_name=HUGGINGFACE_EMBEDDING_MODEL
+            )
 
             if not os.path.exists(DB_FAISS_PATH):
                 st.error(f"⚠️ FAISS index not found at {DB_FAISS_PATH}. Please build it first.")
                 st.stop()
+
 
             db = FAISS.load_local(DB_FAISS_PATH, embedding_model, allow_dangerous_deserialization=True)
             retriever = db.as_retriever(search_kwargs={'k': 3})
@@ -192,4 +200,5 @@ if user_query:
 st.markdown(
     '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
     unsafe_allow_html=True)
+
 
