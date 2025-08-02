@@ -134,7 +134,12 @@ st.markdown("""
 # --- Decorative Heading ---
 st.markdown("""
 <div class="header-bar">
-    <div class="header-title">🤖 Medibot AI Health Assistant</div>
+   st.markdown("""
+<div class="header-bar">
+    <div class="header-title"><span style="font-size: 1.5em;">🤖</span> MediBot AI Health Assistant</div>
+    <div class="header-subtitle">Your trusted companion for health-related information</div>
+</div>
+""", unsafe_allow_html=True)
     <div class="header-subtitle">Your trusted companion for health-related information</div>
 </div>
 """, unsafe_allow_html=True)
@@ -210,6 +215,7 @@ for message_obj in st.session_state.chat_history:
 st.markdown(
     '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
     unsafe_allow_html=True)
+
 
 
 
