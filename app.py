@@ -14,7 +14,7 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 # --- Configuration ---
 HF_TOKEN = os.getenv("HF_TOKEN")
 if not HF_TOKEN:
-    st.error("⚠️ Hugging Face API token not found. Please set HF_TOKEN in your .env file.")
+    st.error("⚠️ Hugging Face API token not found. Please set HF_TOKEN in your .env file or Streamlit secrets.")
     st.stop()
 
 HUGGINGFACE_LLM_REPO_ID = "mistralai/Mistral-7B-Instruct-v0.3"
@@ -24,6 +24,9 @@ DB_FAISS_PATH = "vectorstore/db_faiss"
 
 # --- Functions ---
 def setup_llm(huggingface_repo_id, hf_token):
+    """
+    Sets up the Hugging Face LLM endpoint.
+    """
     llm_endpoint = HuggingFaceEndpoint(
         repo_id=huggingface_repo_id,
         temperature=0.4,
@@ -42,6 +45,9 @@ Context: {context}
 
 
 def set_custom_prompt():
+    """
+    Defines the custom chat prompt template.
+    """
     return ChatPromptTemplate.from_messages(
         [
             ("system", SYSTEM_PROMPT_TEMPLATE),
@@ -50,10 +56,10 @@ def set_custom_prompt():
     )
 
 
-# --- Streamlit UI ---
+# --- Streamlit UI Configuration ---
 st.set_page_config(page_title="🩺 Health AI Assistant", page_icon="🩺", layout="wide")
 
-# --- Custom CSS ---
+# --- Custom CSS for Styling ---
 st.markdown("""
 <style>
     /* Background */
@@ -133,22 +139,22 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# --- Initialize session state ---
+# --- Initialize session state for QA chain and chat history ---
 if "qa_chain" not in st.session_state:
     try:
         with st.spinner("🔄 Loading health documents and AI model..."):
             llm_model = setup_llm(HUGGINGFACE_LLM_REPO_ID, HF_TOKEN)
 
-            # ✅ Set token to environment for embeddings
+            # Set token to environment for HuggingFaceEmbeddings to pick up
             os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
 
-            # ✅ Initialize embeddings (without passing token)
+            # Initialize embeddings (token is picked from environment)
             embedding_model = HuggingFaceEmbeddings(
                 model_name=HUGGINGFACE_EMBEDDING_MODEL
             )
 
             if not os.path.exists(DB_FAISS_PATH):
-                st.error(f"⚠️ FAISS index not found at {DB_FAISS_PATH}. Please build it first.")
+                st.error(f"⚠️ FAISS index not found at {DB_FAISS_PATH}. Please build it first and ensure it's committed to your repository.")
                 st.stop()
 
             db = FAISS.load_local(DB_FAISS_PATH, embedding_model, allow_dangerous_deserialization=True)
@@ -165,38 +171,44 @@ if "qa_chain" not in st.session_state:
         st.error(f"Error initializing assistant: {e}")
         st.stop()
 
+# --- Chat input ---
+user_query = st.chat_input("💬 Type your health question here...")
+
+# Process user query and generate response only if a query is submitted
 if user_query:
-    # Save user message
-    st.session_state.chat_history.append(("user", user_query))
+    # Save user message to chat history
+    st.session_state.chat_history.append({"role": "user", "content": user_query})
 
     with st.spinner("💭 Thinking..."):
+        # Invoke the QA chain to get the response
         response = st.session_state.qa_chain.invoke({'input': user_query})
         answer = response['answer']
 
-    # Save assistant response
-    st.session_state.chat_history.append(("assistant", answer))
+    # Save assistant response to chat history
+    st.session_state.chat_history.append({"role": "assistant", "content": answer, "context": response.get("context", [])})
 
 # --- Display chat history ---
-for role, message in st.session_state.chat_history:
-    if role == "user":
-        st.markdown(f'<div class="chat-bubble-user">🧑‍💻 <b>You:</b> {message}</div>', unsafe_allow_html=True)
-    else:
-        st.markdown(f'<div class="chat-bubble-assistant">🤖 <b>Assistant:</b> {message}</div>', unsafe_allow_html=True)
+# This loop runs on every rerun to display all messages
+for message_obj in st.session_state.chat_history:
+    role = message_obj["role"]
+    content = message_obj["content"]
 
-# --- Show sources ---
-if user_query:
-    st.markdown('<p class="source-title">📚 Sources from Health Documents:</p>', unsafe_allow_html=True)
-    for i, doc in enumerate(response["context"], 1):
-        with st.expander(f"🔹 Source {i}"):
-            st.write(doc.page_content)
-            if doc.metadata:
-                st.json(doc.metadata)
+    if role == "user":
+        st.markdown(f'<div class="chat-bubble-user">🧑‍💻 <b>You:</b> {content}</div>', unsafe_allow_html=True)
+    else:
+        st.markdown(f'<div class="chat-bubble-assistant">🤖 <b>Assistant:</b> {content}</div>', unsafe_allow_html=True)
+        # Display sources if available for the assistant's response
+        if "context" in message_obj and message_obj["context"]:
+            st.markdown('<p class="source-title">📚 Sources from Health Documents:</p>', unsafe_allow_html=True)
+            for i, doc in enumerate(message_obj["context"], 1):
+                with st.expander(f"🔹 Source {i}"):
+                    st.write(doc.page_content)
+                    if doc.metadata:
+                        st.json(doc.metadata)
 
 # --- Footer ---
 st.markdown(
     '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
     unsafe_allow_html=True)
-
-
 
 
