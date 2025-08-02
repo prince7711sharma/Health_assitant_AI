@@ -1,4 +1,6 @@
 🩺 MediBot AI Health Assistant
+
+🩺 MediBot AI Health Assistant
 MediBot AI is a compassionate and knowledgeable digital health assistant built with Streamlit and LangChain. It leverages a powerful Large Language Model (LLM) from Hugging Face and a FAISS vector store to provide clear, concise, and helpful information based on a corpus of health documents.
 
 ✨ Features
