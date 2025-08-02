@@ -128,12 +128,15 @@ st.markdown("""
 # --- Decorative Heading ---
 st.markdown("""
 <div class="header-bar">
-    <div class="header-title">⚕️🤖 Medibot AI Assistant</div>
+    <div class="header-title">
+        <img src="https://www.shutterstock.com/image-vector/3d-vector-robot-chatbot-ai-600nw-2294117979.jpg" alt="MediBot Icon" style="vertical-align: middle; margin-right: 10px; height: 50px; border-radius: 50%;">
+        MediBot AI Health Assistant
+    </div>
     <div class="header-subtitle">Your trusted companion for health-related information</div>
 </div>
 """, unsafe_allow_html=True)
 
-# --- Initialize session state ---
+
 if "qa_chain" not in st.session_state:
     try:
         with st.spinner("🔄 Loading health documents and AI model..."):
@@ -199,4 +202,5 @@ if user_query:
 st.markdown(
     '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
     unsafe_allow_html=True)
+
 
