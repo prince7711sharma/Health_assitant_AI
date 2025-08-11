@@ -21,17 +21,17 @@ HUGGINGFACE_LLM_REPO_ID = "mistralai/Mistral-7B-Instruct-v0.3"
 HUGGINGFACE_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 DB_FAISS_PATH = "vectorstore/db_faiss"
 
-
 # --- Functions ---
 def setup_llm(huggingface_repo_id, hf_token):
+    # ✅ Force use of HF Inference API endpoint
     llm_endpoint = HuggingFaceEndpoint(
         repo_id=huggingface_repo_id,
         temperature=0.4,
         huggingfacehub_api_token=hf_token,
-        max_new_tokens=512
+        max_new_tokens=512,
+        endpoint_url=f"https://api-inference.huggingface.co/models/{huggingface_repo_id}"
     )
     return ChatHuggingFace(llm=llm_endpoint)
-
 
 SYSTEM_PROMPT_TEMPLATE = """
 You are **MediBot AI**, a compassionate and knowledgeable digital health assistant.
@@ -45,7 +45,6 @@ If the context does not contain the answer, state "I'm not sure about that, Prin
 Context: {context}
 """
 
-
 def set_custom_prompt():
     return ChatPromptTemplate.from_messages(
         [
@@ -54,17 +53,13 @@ def set_custom_prompt():
         ]
     )
 
-
 # --- Streamlit UI ---
 st.set_page_config(page_title="🩺 Health AI Assistant", page_icon="🩺", layout="wide")
 
 # --- Custom CSS ---
 st.markdown("""
 <style>
-    /* Background */
     .main { background-color: #f8fbfd; }
-
-    /* Decorative header bar */
     .header-bar {
         background: linear-gradient(to right, #007b83, #00b8a9);
         padding: 18px;
@@ -72,7 +67,6 @@ st.markdown("""
         text-align: center;
         margin-bottom: 20px;
         box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
-        animation: fadeIn 1s ease-in-out;
     }
     .header-title {
         font-size: 36px;
@@ -85,8 +79,6 @@ st.markdown("""
         color: #e9fdfd;
         margin-top: 5px;
     }
-
-    /* Chat bubbles */
     .chat-bubble-user {
         background-color: #e1f0f6; 
         padding: 12px; 
@@ -105,32 +97,22 @@ st.markdown("""
         margin-right: auto;
         color: #003314;
     }
-
-    /* Sources styling */
     .source-title {
         font-weight: bold;
         color: #005c4b;
         font-size: 18px;
         margin-top: 15px;
     }
-
-    /* Footer */
     .footer {
         text-align: center;
         font-size: 12px;
         color: #777;
         margin-top: 20px;
     }
-
-    /* Animation */
-    @keyframes fadeIn {
-        0% {opacity: 0; transform: translateY(-20px);}
-        100% {opacity: 1; transform: translateY(0);}
-    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- Decorative Heading ---
+# --- Header ---
 st.markdown("""
 <div class="header-bar">
     <div class="header-title">
@@ -141,16 +123,14 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-
+# --- Initialize assistant ---
 if "qa_chain" not in st.session_state:
     try:
         with st.spinner("🔄 Loading health documents and AI model..."):
             llm_model = setup_llm(HUGGINGFACE_LLM_REPO_ID, HF_TOKEN)
 
-            # ✅ Set token to environment for embeddings
             os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
 
-            # ✅ Initialize embeddings (without passing token)
             embedding_model = HuggingFaceEmbeddings(
                 model_name=HUGGINGFACE_EMBEDDING_MODEL
             )
@@ -177,59 +157,31 @@ if "qa_chain" not in st.session_state:
 user_query = st.chat_input("💬 Type your health question here...")
 
 if user_query:
-    # Save user message
     st.session_state.chat_history.append(("user", user_query))
 
     with st.spinner("💭 Thinking..."):
         response = st.session_state.qa_chain.invoke({'input': user_query})
         answer = response['answer']
 
-    # Save assistant response
     st.session_state.chat_history.append(("assistant", answer))
 
-
-# --- Display chat history ---
+# --- Display chat ---
 for role, message in st.session_state.chat_history:
     if role == "user":
-        st.markdown(
-            f'<div class="chat-bubble-user">🧑‍💻 <b>You:</b> {message}</div>',
-            unsafe_allow_html=True
-        )
+        st.markdown(f'<div class="chat-bubble-user">🧑‍💻 <b>You:</b> {message}</div>', unsafe_allow_html=True)
     else:
-        st.markdown(
-            f"""
+        st.markdown(f"""
             <div class="chat-bubble-assistant">
                 <img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png"
                      style="width:24px; height:24px; vertical-align:middle; margin-right:6px;">
                 <b>Assistant:</b> {message}
             </div>
-            """,
-            unsafe_allow_html=True
-        )
-
+        """, unsafe_allow_html=True)
 
 # --- Show sources ---
-if user_query:
-    st.markdown('<p class="source-title">📚 Sources from Health Documents:</p>', unsafe_allow_html=True)
-    for i, doc in enumerate(response["context"], 1):
-        with st.expander(f"🔹 Source {i}"):
-            st.write(doc.page_content)
-            if doc.metadata:
-                st.json(doc.metadata)
 
 # --- Footer ---
 st.markdown(
     '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
-    unsafe_allow_html=True)
-
-
-
-
-
-
-
-
-
-
-
-
+    unsafe_allow_html=True
+)
