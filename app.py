@@ -17,7 +17,7 @@ if not HF_TOKEN:
     st.error("⚠️ Hugging Face API token not found. Please set HF_TOKEN in your .env file.")
     st.stop()
 
-HUGGINGFACE_LLM_REPO_ID = "google/flan-t5-base"
+HUGGINGFACE_LLM_REPO_ID = "mistralai/Mistral-7B-Instruct-v0.3""
 HUGGINGFACE_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 DB_FAISS_PATH = "vectorstore/db_faiss"
 
@@ -221,6 +221,7 @@ if user_query:
 st.markdown(
     '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
     unsafe_allow_html=True)
+
 
 
 
