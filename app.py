@@ -1,15 +1,10 @@
 import os
 import streamlit as st
 from dotenv import load_dotenv
+import torch
 
 # Load environment variables
 load_dotenv()
-
-from langchain_huggingface import HuggingFaceEndpoint, HuggingFaceEmbeddings, ChatHuggingFace
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_community.vectorstores import FAISS
-from langchain.chains import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
 
 # --- Configuration ---
 HF_TOKEN = os.getenv("HF_TOKEN")
@@ -17,9 +12,22 @@ if not HF_TOKEN:
     st.error("⚠️ Hugging Face API token not found. Please set HF_TOKEN in your .env file.")
     st.stop()
 
+# ✅ Ensure token is globally available for Hugging Face
+os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
+
+# ✅ Always use CPU on Streamlit Cloud
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 HUGGINGFACE_LLM_REPO_ID = "mistralai/Mistral-7B-Instruct-v0.3"
 HUGGINGFACE_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 DB_FAISS_PATH = "vectorstore/db_faiss"
+
+# --- Imports after env setup ---
+from langchain_huggingface import HuggingFaceEndpoint, HuggingFaceEmbeddings, ChatHuggingFace
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_community.vectorstores import FAISS
+from langchain.chains import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
 
 
 # --- Functions ---
@@ -147,12 +155,11 @@ if "qa_chain" not in st.session_state:
         with st.spinner("🔄 Loading health documents and AI model..."):
             llm_model = setup_llm(HUGGINGFACE_LLM_REPO_ID, HF_TOKEN)
 
-            # ✅ Set token to environment for embeddings
-            os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
-
-            # ✅ Initialize embeddings (without passing token)
+            # ✅ Initialize embeddings on the correct device
             embedding_model = HuggingFaceEmbeddings(
-                model_name=HUGGINGFACE_EMBEDDING_MODEL
+                model_name=HUGGINGFACE_EMBEDDING_MODEL,
+                model_kwargs={"device": str(DEVICE)},
+                encode_kwargs={"normalize_embeddings": True}
             )
 
             if not os.path.exists(DB_FAISS_PATH):
@@ -207,11 +214,9 @@ for role, message in st.session_state.chat_history:
             unsafe_allow_html=True
         )
 
-
-# --- Show sources ---
-
-
 # --- Footer ---
 st.markdown(
     '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
-    unsafe_allow_html=True)
+    unsafe_allow_html=True
+)
+
