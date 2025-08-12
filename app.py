@@ -28,6 +28,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.vectorstores import FAISS
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
+from sentence_transformers import SentenceTransformer
 
 
 # --- Functions ---
@@ -69,10 +70,7 @@ st.set_page_config(page_title="🩺 Health AI Assistant", page_icon="🩺", layo
 # --- Custom CSS ---
 st.markdown("""
 <style>
-    /* Background */
     .main { background-color: #f8fbfd; }
-
-    /* Decorative header bar */
     .header-bar {
         background: linear-gradient(to right, #007b83, #00b8a9);
         padding: 18px;
@@ -93,8 +91,6 @@ st.markdown("""
         color: #e9fdfd;
         margin-top: 5px;
     }
-
-    /* Chat bubbles */
     .chat-bubble-user {
         background-color: #e1f0f6; 
         padding: 12px; 
@@ -113,24 +109,18 @@ st.markdown("""
         margin-right: auto;
         color: #003314;
     }
-
-    /* Sources styling */
     .source-title {
         font-weight: bold;
         color: #005c4b;
         font-size: 18px;
         margin-top: 15px;
     }
-
-    /* Footer */
     .footer {
         text-align: center;
         font-size: 12px;
         color: #777;
         margin-top: 20px;
     }
-
-    /* Animation */
     @keyframes fadeIn {
         0% {opacity: 0; transform: translateY(-20px);}
         100% {opacity: 1; transform: translateY(0);}
@@ -153,13 +143,19 @@ st.markdown("""
 if "qa_chain" not in st.session_state:
     try:
         with st.spinner("🔄 Loading health documents and AI model..."):
+            # LLM via HuggingFace Inference API
             llm_model = setup_llm(HUGGINGFACE_LLM_REPO_ID, HF_TOKEN)
 
-            # ✅ Initialize embeddings on the correct device
+            # ✅ Load SentenceTransformer directly to avoid meta tensors
+            st_model = SentenceTransformer(
+                HUGGINGFACE_EMBEDDING_MODEL,
+                device=str(DEVICE),
+                trust_remote_code=True
+            )
+
             embedding_model = HuggingFaceEmbeddings(
                 model_name=HUGGINGFACE_EMBEDDING_MODEL,
-                model_kwargs={"device": str(DEVICE)},
-                encode_kwargs={"normalize_embeddings": True}
+                model=st_model
             )
 
             if not os.path.exists(DB_FAISS_PATH):
@@ -184,16 +180,13 @@ if "qa_chain" not in st.session_state:
 user_query = st.chat_input("💬 Type your health question here...")
 
 if user_query:
-    # Save user message
     st.session_state.chat_history.append(("user", user_query))
 
     with st.spinner("💭 Thinking..."):
         response = st.session_state.qa_chain.invoke({'input': user_query})
         answer = response['answer']
 
-    # Save assistant response
     st.session_state.chat_history.append(("assistant", answer))
-
 
 # --- Display chat history ---
 for role, message in st.session_state.chat_history:
@@ -219,4 +212,3 @@ st.markdown(
     '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
     unsafe_allow_html=True
 )
-
