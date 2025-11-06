@@ -26,7 +26,7 @@ DB_FAISS_PATH = "vectorstore/db_faiss"
 from langchain_huggingface import HuggingFaceEndpoint, HuggingFaceEmbeddings, ChatHuggingFace
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.vectorstores import FAISS
-from langchain.chains import create_retrieval_chain
+from langchain.chains.retrieval import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from sentence_transformers import SentenceTransformer
 
@@ -212,3 +212,4 @@ st.markdown(
     '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
     unsafe_allow_html=True
 )
+
