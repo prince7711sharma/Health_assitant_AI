@@ -26,12 +26,11 @@ DB_FAISS_PATH = "vectorstore/db_faiss"
 from langchain_huggingface import HuggingFaceEndpoint, HuggingFaceEmbeddings, ChatHuggingFace
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.vectorstores import FAISS
-from langchain.chains.retrieval import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
 from sentence_transformers import SentenceTransformer
+from langchain.schema.runnable import RunnablePassthrough
 
 
-# --- Functions ---
+# --- LLM Setup ---
 def setup_llm(huggingface_repo_id, hf_token):
     llm_endpoint = HuggingFaceEndpoint(
         repo_id=huggingface_repo_id,
@@ -109,12 +108,6 @@ st.markdown("""
         margin-right: auto;
         color: #003314;
     }
-    .source-title {
-        font-weight: bold;
-        color: #005c4b;
-        font-size: 18px;
-        margin-top: 15px;
-    }
     .footer {
         text-align: center;
         font-size: 12px;
@@ -128,11 +121,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- Decorative Heading ---
+
+# --- Page Heading ---
 st.markdown("""
 <div class="header-bar">
     <div class="header-title">
-        <img src="https://www.shutterstock.com/image-vector/3d-vector-robot-chatbot-ai-600nw-2294117979.jpg" alt="MediBot Icon" style="vertical-align: middle; margin-right: 10px; height: 50px; border-radius: 50%;">
         MediBot AI Health Assistant
     </div>
     <div class="header-subtitle">Your trusted companion for health-related information</div>
@@ -140,13 +133,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+# --- Chain Setup ---
 if "qa_chain" not in st.session_state:
     try:
         with st.spinner("🔄 Loading health documents and AI model..."):
-            # LLM via HuggingFace Inference API
             llm_model = setup_llm(HUGGINGFACE_LLM_REPO_ID, HF_TOKEN)
 
-            # ✅ Load SentenceTransformer directly to avoid meta tensors
             st_model = SentenceTransformer(
                 HUGGINGFACE_EMBEDDING_MODEL,
                 device=str(DEVICE),
@@ -159,36 +151,45 @@ if "qa_chain" not in st.session_state:
             )
 
             if not os.path.exists(DB_FAISS_PATH):
-                st.error(f"⚠️ FAISS index not found at {DB_FAISS_PATH}. Please build it first.")
+                st.error(f"⚠️ FAISS index not found at: {DB_FAISS_PATH}")
                 st.stop()
 
             db = FAISS.load_local(DB_FAISS_PATH, embedding_model, allow_dangerous_deserialization=True)
-            retriever = db.as_retriever(search_kwargs={'k': 3})
+            retriever = db.as_retriever(search_kwargs={"k": 3})
 
             custom_prompt = set_custom_prompt()
-            document_combiner_chain = create_stuff_documents_chain(llm_model, custom_prompt)
-            qa_chain = create_retrieval_chain(retriever, document_combiner_chain)
+
+            # ✅ LCEL Retrieval Chain - new replacement
+            qa_chain = (
+                {"context": retriever, "input": RunnablePassthrough()}
+                | custom_prompt
+                | llm_model
+            )
 
             st.session_state.qa_chain = qa_chain
             st.session_state.chat_history = []
-        st.success("✅ Assistant is ready to chat!")
+
+        st.success("✅ MediBot is ready to help you!")
+
     except Exception as e:
-        st.error(f"Error initializing assistant: {e}")
+        st.error(f"❌ Error initializing assistant: {e}")
         st.stop()
 
-# --- Chat input ---
+
+# --- Chat Input ---
 user_query = st.chat_input("💬 Type your health question here...")
 
 if user_query:
     st.session_state.chat_history.append(("user", user_query))
 
     with st.spinner("💭 Thinking..."):
-        response = st.session_state.qa_chain.invoke({'input': user_query})
-        answer = response['answer']
+        response = st.session_state.qa_chain.invoke(user_query)
+        answer = response  # ✅ returns plain text now
 
     st.session_state.chat_history.append(("assistant", answer))
 
-# --- Display chat history ---
+
+# --- Chat Display ---
 for role, message in st.session_state.chat_history:
     if role == "user":
         st.markdown(
@@ -197,19 +198,13 @@ for role, message in st.session_state.chat_history:
         )
     else:
         st.markdown(
-            f"""
-            <div class="chat-bubble-assistant">
-                <img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png"
-                     style="width:24px; height:24px; vertical-align:middle; margin-right:6px;">
-                <b>Assistant:</b> {message}
-            </div>
-            """,
+            f'<div class="chat-bubble-assistant"><b>MediBot AI:</b> {message}</div>',
             unsafe_allow_html=True
         )
 
+
 # --- Footer ---
 st.markdown(
-    '<p class="footer">⚠️ This chatbot is for educational purposes only and is not a substitute for professional medical advice.</p>',
+    '<p class="footer">⚠️ Not a substitute for professional medical advice.</p>',
     unsafe_allow_html=True
 )
-
